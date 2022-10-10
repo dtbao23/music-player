@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music player</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" integrity="sha512-HK5fgLBL+xu6dm/Ii3z4xhlSUyZgTT9tuc/hSrtw6uzJOvgRr2a9jyxxT1ely+B+xFAmJKVSTbpM/CuL7qxO8w==" crossorigin="anonymous" />
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+    <div class="player">
+        <!-- Dashboard -->
+        <div class="dashboard">
+          <!-- Header -->
+          <header>
+            <h4>Now playing:</h4>
+            <h2>String 57th & 9th</h2>
+          </header>
+      
+          <!-- CD -->
+          <div class="cd">
+            <div class="cd-thumb" 
+                style="background-image: url('https://i.ytimg.com/vi/jTLhQf5KJSc/maxresdefault.jpg')">
+            </div>
+          </div>
+      
+          <!-- Control -->
+          <div class="control">
+            <div class="btn btn-repeat">
+              <i class="fas fa-redo"></i>
+            </div>
+            <div class="btn btn-prev">
+              <i class="fas fa-step-backward"></i>
+            </div>
+            <div class="btn btn-toggle-play">
+              <i class="fas fa-pause icon-pause"></i>
+              <i class="fas fa-play icon-play"></i>
+            </div>
+            <div class="btn btn-next">
+              <i class="fas fa-step-forward"></i>
+            </div>
+            <div class="btn btn-random">
+              <i class="fas fa-random"></i>
+            </div>
+          </div>
+      
+          <input id="progress" class="progress" type="range" value="0" step="1" min="0" max="100">
+      
+          <audio id="audio" src=""></audio>
+        </div>
+      
+        <!-- Playlist -->
+        <div class="playlist"></div>
+
+      </div>
+      
+      <script>
+        /*
+            1. Render songs
+            2. Scroll top
+            3. Play / Pause / Seek        
+            4. CD rotate
+            5. Next / prev
+            6. Random
+            7. Next / Repeat when ended
+            8. Active song
+            9. Scroll active song into view
+            10. Play song when click
+        */
+        const $ = document.querySelector.bind(document);
+        const $$ = document.querySelectorAll.bind(document);
+
+        const player = $('.player');
+        const cd = $('.cd');
+        const titleSong = $('header h2');                
+        const imgCd = $('.cd-thumb');
+        const audio = $('#audio');
+        const playBtn = $('.btn-toggle-play');
+        const progress = $('#progress');
+        const prevBtn = $('.btn-prev');
+        const nextBtn = $('.btn-next');
+        const randomBtn = $('.btn-random');
+
+        const app = {
+            currentIndex: 0,
+            isPlaying: false, isRandom: false,
+            songs: [
+                {
+                    name: 'Yêu 5',
+                    singer: 'Rhymastic',
+                    path: './assets/music/Yeu-5-Rhymastic.mp3',
+                    img: './assets/img/Yeu-5.png'
+                },
+                {
+                    name: 'Vợ Người Ta',
+                    singer: 'Phan Mạnh Quỳnh',
+                    path: './assets/music/Vo-Nguoi-Ta-Phan-Manh-Quynh.mp3',
+                    img: './assets/img/Vo-Nguoi-Ta.png'
+                },
+                {
+                    name: 'Tri Kỷ',
+                    singer: 'Phan Mạnh Quỳnh',
+                    path: './assets/music/Tri-Ky-Phan-Manh-Quynh.mp3',
+                    img: './assets/img/Tri-Ky.png'
+                },
+                {
+                    name: 'Tết Về Sớm Nhé',
+                    singer: 'Phan Mạnh Quỳnh',
+                    path: './assets/music/Tet-Ve-Som-Nhe-Di-De-Tro-Ve-4-Phan-Manh-Quynh.mp3',
+                    img: './assets/img/Tet-Ve-Som-Nhe.png'
+                },
+                {
+                    name: 'Sao Cha Không',
+                    singer: 'Phan Mạnh Quỳnh',
+                    path: './assets/music/Sao-Cha-Khong-Bo-Gia-OST-Phan-Manh-Quynh.mp3',
+                    img: './assets/img/Sao-Cha-Khong.png'
+                },
+                {
+                    name: 'Khi Người Mình Yêu Khóc',
+                    singer: 'Phan Mạnh Quỳnh',
+                    path: './assets/music/Khi-Nguoi-Minh-Yeu-Khoc-Phan-Manh-Quynh.mp3',
+                    img: './assets/img/Khi-Nguoi-Minh-Yeu-Khoc.png'
+                },
+                {
+                    name: 'Đi Để Trở Về',
+                    singer: 'Phan Mạnh Quỳnh',
+                    path: './assets/music/Di-De-Tro-Ve-6-Phan-Manh-Quynh.mp3',
+                    img: './assets/img/Di-De-Tro-Ve.png'
+                },
+                {
+                    name: 'Có Một Nơi Như Thế',
+                    singer: 'Phan Mạnh Quỳnh',
+                    path: './assets/music/Co-Mot-Noi-Nhu-The-Phan-Manh-Quynh.mp3',
+                    img: './assets/img/Co-Mot-Noi-Nhu-The.png'
+                }               
+            ],
+            
+            //render list music
+            render: function(){
+                // map lưu trữ qua key-value
+                const htmls = this.songs.map(song => {
+                    return `
+                        <div class="song">
+                            <div class="thumb" 
+                                style="background-image: url('${song.img}')">
+                            </div>
+                            <div class="body">
+                                <h3 class="title">${song.name}</h3>
+                                <p class="author">${song.singer}</p>
+                            </div>  
+                            <div class="option">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </div>
+                        </div>
+                    `
+                })
+                $('.playlist').innerHTML = htmls.join('');
+            },
+            defineProperties: function(){
+                Object.defineProperty(this, 'currentSong', {
+                    get: function() {
+                        return this.songs[this.currentIndex];
+                    }
+                })
+            },
+            // Xử lí tất cả sự kiện xảy ra
+            handleEvents: function(){               
+                const cdWidth = cd.offsetWidth;// lấy giá trị mặc định là 200px của đĩa cd
+                const _this = this;
+
+                //Xoay đĩa CD              
+                const autoRotateCd = cd.animate([{transform: 'rotate(360deg)'}],{
+                    duration: 10000,
+                    iterations: Infinity
+                })
+                autoRotateCd.pause(); 
+                // Xử lí phóng to thu nhỏ CD khi scroll(cuộn)
+                document.onscroll = function(){
+                    const scrollTop = window.scrollTop || document.documentElement.scrollTop;
+                    const newCdWidth = cdWidth - scrollTop;// đặt lại chiều rộng của đĩa khi scroll                    
+                    if(newCdWidth < 0)
+                        cd.style.width = 0;
+                    else
+                        cd.style.width = newCdWidth + 'px';
+                    cd.style.opacity = newCdWidth / cdWidth;//độ mờ 0 ->0.5 -> 1
+                };
+                
+                // Xử lí play music
+                playBtn.onclick = function(){                   
+                    if(_this.isPlaying){
+                        audio.pause();
+                        
+                    } else {
+                        audio.play();                        
+                    }                               
+                }
+                // khi song được play
+                audio.onplay = function(){
+                    _this.isPlaying = true;
+                    player.classList.add('playing');  
+                    autoRotateCd.play();                                                  
+                }
+                // khi song được pause
+                audio.onpause = function(){
+                    _this.isPlaying = false;
+                    player.classList.remove('playing');
+                    autoRotateCd.pause();  
+                    // next bài khi hết nhạc 
+                    if(progress.value == '100'){                       
+                        _this.nextSong();
+                        audio.play();
+                    }         
+                }
+                // khi tiến độ bài hát thay đổi
+                audio.ontimeupdate = function(){
+                    if(audio.duration){
+                        const progressPercent = Math.floor(audio.currentTime / audio.duration * 100)
+                        progress.value = progressPercent;                       
+                    }
+                }
+                // Xử lí khi tua Song
+                progress.onchange = function(e){
+                    audio.play();
+                    audio.currentTime = (e.target.value * audio.duration) / 100;                                           
+                }
+                // xử lí next
+                nextBtn.onclick = function(){
+                    _this.nextSong();
+                    nextBtn.classList.add('active');
+                    // nhận dạng nút next khi bấm cho người dùng biết
+                    setTimeout(function(){
+                        nextBtn.classList.remove('active');
+                    }, 250);
+                    audio.play();
+                    
+                }
+                // xử lí prev
+                prevBtn.onclick = function(){
+                    _this.prevSong();
+                    prevBtn.classList.add('active');
+                    // nhận dạng nút prev khi bấm cho người dùng biết
+                    setTimeout(function(){
+                        prevBtn.classList.remove('active');
+                    }, 250);
+                    audio.play();
+                }
+                // Random song
+                randomBtn.onclick = function(){
+                    _this.isRandom = !_this.isRandom;               
+                    randomBtn.classList.toggle('active', _this.isRandom);                                                          
+                }
+
+                
+            },
+            
+            // tải thông tin bài hát đầu tiên vào UI kh load
+            loadCurrentSong: function(){               
+                titleSong.textContent = this.currentSong.name;
+                imgCd.style.backgroundImage = `url('${this.currentSong.img}')`;
+                audio.src = this.currentSong.path;
+                
+            },            
+
+            // next song
+            nextSong: function(){
+                this.currentIndex++;
+                if(this.currentIndex == this.songs.length){
+                    this.currentIndex = 0;
+                }       
+                this.loadCurrentSong();
+            },
+            // prev song
+            prevSong: function(){
+                this.currentIndex--;
+                if(this.currentIndex < 0){
+                    this.currentIndex = this.songs.length - 1;
+                }       
+                this.loadCurrentSong();
+            },
+
+            start: function() {
+                //Định nghĩa thuộc tính cho object
+                this.defineProperties();
+                
+                // lắng nghe / xử lí các sự kiện (DOM Events)
+                this.handleEvents();
+
+                this.loadCurrentSong();
+                // xuất ra ds bài hát
+                this.render();
+            }
+            
+        }
+
+        app.start();
+
+
+
+      </script>
+
+</body>
+</html>
+
+
+
+
+
+
+<!-- Design from: https://static.collectui.com/shots/3671744/musicloud-revolutionary-app-for-music-streaming-large -->
