@@ -22,9 +22,7 @@
       
           <!-- CD -->
           <div class="cd">
-            <div class="cd-thumb" 
-                style="background-image: url('https://i.ytimg.com/vi/jTLhQf5KJSc/maxresdefault.jpg')">
-            </div>
+            <div class="cd-thumb"></div>
           </div>
       
           <!-- Control -->
@@ -83,10 +81,11 @@
         const prevBtn = $('.btn-prev');
         const nextBtn = $('.btn-next');
         const randomBtn = $('.btn-random');
+        const repeatBtn = $('.btn-repeat');
 
         const app = {
             currentIndex: 0,
-            isPlaying: false, isRandom: false,
+            isPlaying: false, isRandom: false, isRepeat: false,
             songs: [
                 {
                     name: 'Yêu 5',
@@ -166,6 +165,7 @@
                     }
                 })
             },
+
             // Xử lí tất cả sự kiện xảy ra
             handleEvents: function(){               
                 const cdWidth = cd.offsetWidth;// lấy giá trị mặc định là 200px của đĩa cd
@@ -187,33 +187,84 @@
                         cd.style.width = newCdWidth + 'px';
                     cd.style.opacity = newCdWidth / cdWidth;//độ mờ 0 ->0.5 -> 1
                 };
-                
+
+                /*Events Button */
                 // Xử lí play music
                 playBtn.onclick = function(){                   
                     if(_this.isPlaying){
-                        audio.pause();
-                        
+                        audio.pause();                        
                     } else {
                         audio.play();                        
                     }                               
                 }
+
+                // xử lí next
+                nextBtn.onclick = function(){
+                    // nhận dạng nút next khi bấm cho người dùng biết
+                    nextBtn.classList.add('active');                   
+                    setTimeout(function(){
+                        nextBtn.classList.remove('active');
+                    }, 250);
+                    
+                    if(_this.isRandom){// khi Random được bật
+                        _this.playRandomSong();
+                    } else {//khi Random không bật
+                        _this.nextSong();
+                    }                                       
+                    audio.play();                    
+                }
+
+                // xử lí prev
+                prevBtn.onclick = function(){
+                    // nhận dạng nút prev khi bấm cho người dùng biết
+                    prevBtn.classList.add('active');                 
+                    setTimeout(function(){
+                        prevBtn.classList.remove('active');
+                    }, 250);
+
+                    if(_this.isRandom){// khi Random được bật
+                        _this.playRandomSong();
+                    } else {//khi Random không bật
+                        _this.prevSong();
+                    }                                      
+                    audio.play();
+                }
+
+                 // Random song
+                randomBtn.onclick = function(){
+                    if(_this.isRepeat){
+                        _this.isRepeat = !_this.isRepeat;
+                        repeatBtn.classList.toggle('active', _this.isRepeat);
+                    }                    
+                    _this.isRandom = !_this.isRandom;               
+                    randomBtn.classList.toggle('active', _this.isRandom);                                                                             
+                }
+
+                // Repeat Song
+                repeatBtn.onclick = function(){
+                    if(_this.isRandom){
+                        _this.isRandom = !_this.isRandom;               
+                        randomBtn.classList.toggle('active', _this.isRandom); 
+                    }
+                    _this.isRepeat = !_this.isRepeat;
+                    repeatBtn.classList.toggle('active', _this.isRepeat);
+                }
+
+                /*Events audio */
                 // khi song được play
                 audio.onplay = function(){
                     _this.isPlaying = true;
                     player.classList.add('playing');  
                     autoRotateCd.play();                                                  
                 }
+
                 // khi song được pause
                 audio.onpause = function(){
                     _this.isPlaying = false;
                     player.classList.remove('playing');
-                    autoRotateCd.pause();  
-                    // next bài khi hết nhạc 
-                    if(progress.value == '100'){                       
-                        _this.nextSong();
-                        audio.play();
-                    }         
+                    autoRotateCd.pause();                            
                 }
+
                 // khi tiến độ bài hát thay đổi
                 audio.ontimeupdate = function(){
                     if(audio.duration){
@@ -221,38 +272,30 @@
                         progress.value = progressPercent;                       
                     }
                 }
+
+                //Khi hát hết nhạc
+                audio.onended = function(){
+                    if(_this.isRepeat){// khi btn repeat on
+                        _this.loadCurrentSong();
+                    }
+                    else{
+                        if(_this.isRandom){// khi Random được bật
+                            _this.playRandomSong();
+                        } else {//khi Random không bật
+                            _this.nextSong();
+                        }     
+                    }                  
+                    audio.play();
+                }
+
+                /*Events progress */
                 // Xử lí khi tua Song
                 progress.onchange = function(e){
                     audio.play();
                     audio.currentTime = (e.target.value * audio.duration) / 100;                                           
                 }
-                // xử lí next
-                nextBtn.onclick = function(){
-                    _this.nextSong();
-                    nextBtn.classList.add('active');
-                    // nhận dạng nút next khi bấm cho người dùng biết
-                    setTimeout(function(){
-                        nextBtn.classList.remove('active');
-                    }, 250);
-                    audio.play();
-                    
-                }
-                // xử lí prev
-                prevBtn.onclick = function(){
-                    _this.prevSong();
-                    prevBtn.classList.add('active');
-                    // nhận dạng nút prev khi bấm cho người dùng biết
-                    setTimeout(function(){
-                        prevBtn.classList.remove('active');
-                    }, 250);
-                    audio.play();
-                }
-                // Random song
-                randomBtn.onclick = function(){
-                    _this.isRandom = !_this.isRandom;               
-                    randomBtn.classList.toggle('active', _this.isRandom);                                                          
-                }
-
+                
+               
                 
             },
             
@@ -280,11 +323,20 @@
                 }       
                 this.loadCurrentSong();
             },
+            // Random Song
+            playRandomSong: function(){
+                let newIndexSong;             
+                do{
+                    newIndexSong = Math.floor(Math.random() * this.songs.length);
+                }while(newIndexSong === this.currentIndex);
+                this.currentIndex = newIndexSong;
+                this.loadCurrentSong();
+            },
+            
 
             start: function() {
                 //Định nghĩa thuộc tính cho object
                 this.defineProperties();
-                
                 // lắng nghe / xử lí các sự kiện (DOM Events)
                 this.handleEvents();
 
